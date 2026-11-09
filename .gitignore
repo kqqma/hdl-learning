@@ -2,3 +2,5 @@ sim
 *.vcd
 obj_dir/
 
+sim
+*.vcd
