@@ -64,7 +64,10 @@ Directed tests: 18 / 18 passing
 Lint: clean
 Exhaustive test at 4 bits (cocotb): pending
 Random test at 32 bits (cocotb): pending
-Yosys cell count at WIDTH = 4 / 8 / 16: pending
+Yosys cell count at WIDTH = 4 / 8 / 16: 
+alu/synth/stat_w16.txt:   Number of cells:                485
+alu/synth/stat_w4.txt:   Number of cells:                124
+alu/synth/stat_w8.txt:   Number of cells:                243
 
 
 Design decisions and trade-offs
