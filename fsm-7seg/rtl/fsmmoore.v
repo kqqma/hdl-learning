@@ -4,7 +4,7 @@ module fsmmoore(
     input in,
     input reset,
     output out); //
-    localparam A = 0, B = 1, C = 2, D = 3, E=4;
+    localparam [2:0] A = 3'd0, B = 3'd1, C = 3'd2, D = 3'd3, E = 3'd4;
     reg [2:0] state, next_state;
     always @(*) begin
     case (state)
