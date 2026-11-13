@@ -2,3 +2,4 @@ sim
 sim7
 *.vcd
 yosys_results.txt
+obj_dir/
