@@ -1,4 +1,4 @@
 sim
+sim7
 *.vcd
-obj_dir/
-
+yosys_results.txt
