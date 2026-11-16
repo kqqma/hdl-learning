@@ -10,7 +10,7 @@ Simulated with Icarus Verilog, viewed in GTKWave, linted with Verilator
 
 ## Run a simulation
 ```bash
-cd alu
+cd *project*
 iverilog -o sim rtl/*.v tb/*.v
 vvp sim
 gtkwave dump.vcd
