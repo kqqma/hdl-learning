@@ -5,3 +5,7 @@ obj_dir/
 sim
 *.vcd
 *.dot
+.venv/
+sim_build/
+results.xml
+__pycache__/
