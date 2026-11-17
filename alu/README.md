@@ -1,6 +1,5 @@
 # ALU (Verilog)
-
-An N-bit ALU in Verilog with Z/N/C/V status flags, verified with iverilog testbench.
+An N-bit ALU in Verilog with Z/N/C/V status flags, verified exhaustively at 4 bits with a cocotb (Python) testbench against a reference model, plus a directed iverilog testbench.
 
 
 ## Implemented:
@@ -38,8 +37,11 @@ the reasoning behind having both C and V flags: the ALU doesnt know whether the 
 
 ## Files
 
-alu/rtl/alu.v      design
-alu/tb/tb_alu.v    testbench
+alu/rtl/alu.v          design
+alu/tb/tb_alu.v        directed testbench (Verilog)
+alu/tb/test_alu.py     exhaustive testbench + Python reference model (cocotb)
+alu/tb/Makefile        cocotb build/run setup (Icarus)
+alu/synth/             Yosys schematic and cell-count reports
 alu/README.md
 
 
@@ -51,13 +53,20 @@ alu/README.md
     //lints RTL
     gtkwave alu.vcd
     //opens waveforms
+    source .venv/bin/activate
+    cd alu/tb
+    make
+    //exhaustive cocotb test
 ```
 
 ## Verification
 
 
-The testbench works by comparing each output to an expected value and counts the number of failures. edge cases were conducted for each operation including: carry, overflow, borrow, signed SLT, zeros, and default checks.
+Exhaustive (cocotb). test_alu.py contains a Python reference model, alu_model(a, b, op), written independently of the RTL. The test drives every combination of op, a and b (8 × 16 × 16 = 2,048 cases) into the 4-bit ALU and checks all five outputs (y, Z, N, C, V) against the model on every case.
 
+The model has to mimic hardware widths explicitly: Python integers never overflow, so results are masked to 4 bits (& 0xF), the carry/borrow is taken from bit 4 of a 5-bit mask (matching {c, y} in the RTL), and SLT converts inputs to signed (−8 to 7) before comparing.
+
+Directed (Verilog). tb_alu.v compares each output to a hand-computed expected value and counts failures. It covers edge cases for each operation, including carry, overflow, borrow, signed SLT, zero results and the default case.
 ![Waveform of the directed tests](docs/waveform.png)
 Synthesized structure (Yosys, after `proc; opt`): [alu_rtl.svg](synth/alu_rtl.svg)
 
@@ -65,7 +74,7 @@ Synthesized structure (Yosys, after `proc; opt`): [alu_rtl.svg](synth/alu_rtl.sv
 
 - Directed tests: 18 / 18 passing
 - Lint: clean
-- Exhaustive test at 4 bits (cocotb): pending
+- Exhaustive test at 4 bits (cocotb): 2048/2048 passing
 - Random test at 32 bits (cocotb): pending
 - Yosys cell count at WIDTH = 4 / 8 / 16: 
     124 / 243 / 485, about 30 cells per bit
@@ -81,6 +90,8 @@ Synthesized structure (Yosys, after `proc; opt`): [alu_rtl.svg](synth/alu_rtl.sv
 - SLT compared unsigned until $signed() was caught
     - the first version of SLT was y = (a <> b) ? 0 : 1, which when traced on an edge case like 1111 <> 0001, because verilog defaults to unsigned, read 1111 as 15. This meant the answer gave 0, which differed from my own result of 1 (-1 <> 1). This was eventually fixed by incorporating a $signed() operator on a and b. I learned that signed vs. unsigned is an interpretation that Verilog won’t apply for you, and every corner case I find by hand should become a test.
 - put in the carry bit in subtraction as {y, c} instead of {c, y}.
+- unmasked Python results (e.g. 15 + 1 = 16 instead of y = 0, C = 1), C/V computed for every op instead of only ADD/SUB, and SLT using unsigned <= instead of signed <. Each was caught by hand-checking corner cases (including a == b) before running against the RTL.
 
 ## Next steps
+- Randomized cocotb tests at WIDTH = 32.
 - Registered inputs/outputs for timing, or running it through LibreLane.
