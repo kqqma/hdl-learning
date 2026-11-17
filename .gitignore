@@ -9,6 +9,6 @@ sim
 *.vcd
 *.dot
 .venv/
-sim_build/
+sim_build*/
 results.xml
 __pycache__/
