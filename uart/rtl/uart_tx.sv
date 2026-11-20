@@ -17,7 +17,7 @@ logic baud_clear;
 logic tick; //for baudgen
 
 baud_gen #(.clk_freq(clk_freq), .baud(baud), .oversample(1)) u_baud (.clk(clk), .resetn(resetn), .clear(baud_clear), .tick(tick));
-
+assign baud_clear = (state == IDLE) && tx_start;
 logic [7:0] shiftreg;
 logic [2:0] bitcounter;
 
@@ -26,16 +26,13 @@ always_ff @(posedge clk or negedge resetn) begin
         state <= IDLE;
         shiftreg <= '0; //fill zeros
         bitcounter <= '0;
-        baud_clear <= 1'b0;
         end
     else begin 
-        baud_clear <= 1'b0; //default is no clearing unless a state under sets it
 
         case (state)
             IDLE: begin
             if (tx_start) begin
                 shiftreg <= tx_data;
-                baud_clear <= 1'b1;
                 state <= START;
                 end
             end
