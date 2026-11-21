@@ -98,3 +98,33 @@ async def bad_stop_bit(dut):
     await send_byte(dut, 0xA3, expected_div)
     got = await with_timeout(rx_task, 2 * 10 * expected_div * 20, "ns")
     assert got == 0xA3, f"after the bad frame, sent 0xA3, received {got:#04x}"
+
+    
+@cocotb.test()
+async def glitch_rejected_rx_low(dut):
+    cocotb.start_soon(Clock(dut.clk, 20, unit="ns").start())
+    dut.rx.value = 1
+    dut.resetn.value = 0
+    await ClockCycles(dut.clk, 2)
+    dut.resetn.value = 1
+    await ClockCycles(dut.clk, 2)
+
+    counts = {"valid": 0, "err": 0}
+    cocotb.start_soon(count_pulses(dut, counts))    # start counting before anything happens
+
+    #pull rx low for 50 cycles to simulate a a short glitch 
+    dut.rx.value = 0
+    await ClockCycles(dut.clk, 50)
+    dut.rx.value = 1 # send_byte left the line LOW, so put it
+    #idle for a couple of bit times
+
+    await ClockCycles(dut.clk, 3 * expected_div)
+    # 2. RX should have ignored glitch 
+    assert counts["err"] == 0, f"expected 1 frame_err, got {counts['err']}"
+    assert counts["valid"] == 0, f"expected no rx_valid, got {counts['valid']}"
+
+    # 3. RX should still work for the next good frame
+    rx_task = cocotb.start_soon(wait_for_byte(dut))
+    await send_byte(dut, 0xA3, expected_div)
+    got = await with_timeout(rx_task, 2 * 10 * expected_div * 20, "ns")
+    assert got == 0xA3, f"after the bad frame, sent 0xA3, received {got:#04x}"
