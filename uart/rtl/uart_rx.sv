@@ -21,20 +21,26 @@ baud_gen #(.clk_freq(clk_freq), .baud(baud), .oversample(16)) u_baud (.clk(clk),
 logic [7:0] shiftreg;
 logic [2:0] bitcounter;
 logic [3:0] tickcounter;
-logic rx_meta, rx_sync;
+logic rx_meta, rx_sync, rx_fall, rx_prev;
 
-assign baud_clear = (state == IDLE) && !rx_sync;
+assign baud_clear = (state == IDLE) && rx_fall;
 
 always_ff @(posedge clk or negedge resetn) begin
     if (!resetn) begin
         rx_meta <= 1'b1;   // idle-high
         rx_sync <= 1'b1;
+        rx_prev <= 1'b1;
     end else begin
-        rx_meta <= rx;       // might go metastable
-        rx_sync <= rx_meta;  // has a full clock cycle to settle first
+        rx_meta <= rx;  // might go metastable
+        rx_sync <= rx_meta; // has a full clock cycle to settle first
+        rx_prev <= rx_sync; //hold previous value of rx_sync
     end
 
 end
+//since idle starts a frame when line is low, but start bit should only start when line goes from high to low
+//if stop bit is bad, then line is already low when rx gets back to idle, and there was never a new frame started
+//this is fixed by only starting a frame on falling edge of rx_sync
+assign rx_fall = rx_prev & !rx_sync;    // line just went high to low
 
 always_ff @(posedge clk or negedge resetn) begin
     if (!resetn) begin
@@ -52,7 +58,7 @@ always_ff @(posedge clk or negedge resetn) begin
         case(state)
 
         IDLE: begin
-        if (!rx_sync) begin
+        if (rx_fall) begin
         state <= START;
         tickcounter <= '0;
         end
