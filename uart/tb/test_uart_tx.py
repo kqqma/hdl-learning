@@ -1,8 +1,8 @@
 import os
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge, FallingEdge, ClockCycles, Timer
-
+from cocotb.triggers import RisingEdge, FallingEdge, ClockCycles, Timer, with_timeout
+import random
 CLK_FREQ = 50_000_000
 BAUD = 115_200
 oversample = 1
@@ -46,3 +46,28 @@ async def send_bytes(dut):
     dut.tx_start.value = 0
     got_byte = await rx_task
     assert got_byte == 0x41, f"Expected 0x41, got {got_byte:#04x}"
+
+@cocotb.test()
+async def send_random_bytes(dut):
+    cocotb.start_soon(Clock(dut.clk, 20, unit="ns").start())  # 50 MHz
+    dut.resetn.value = 0
+    dut.tx_start.value = 0
+    dut.tx_data.value = 0
+    await ClockCycles(dut.clk, 2)
+    dut.resetn.value = 1
+
+
+    
+    for i in range(256):
+        dut._log.info(f"sending {i:#04x}")
+        await ClockCycles(dut.clk, random.randint(1, expected_div))  # random delay before sending
+        rx_task = cocotb.start_soon(receive_byte(dut, expected_div))
+        await FallingEdge(dut.clk)
+        dut.tx_data.value = i
+        dut.tx_start.value = 1
+        await FallingEdge(dut.clk)
+        dut.tx_start.value = 0
+        got_byte = await with_timeout(rx_task, 2 * 10 * expected_div * 20, "ns")
+        assert got_byte == i, f"Expected {i:#04x}, got {got_byte:#04x}"
+        while dut.tx_busy.value == 1:
+            await FallingEdge(dut.clk)
