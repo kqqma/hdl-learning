@@ -115,8 +115,7 @@ async def glitch_rejected_rx_low(dut):
     #pull rx low for 50 cycles to simulate a a short glitch 
     dut.rx.value = 0
     await ClockCycles(dut.clk, 50)
-    dut.rx.value = 1 # send_byte left the line LOW, so put it
-    #idle for a couple of bit times
+    dut.rx.value = 1 #simulate glitch recovered return rx to idle
 
     await ClockCycles(dut.clk, 3 * expected_div)
     # 2. RX should have ignored glitch 
@@ -128,3 +127,36 @@ async def glitch_rejected_rx_low(dut):
     await send_byte(dut, 0xA3, expected_div)
     got = await with_timeout(rx_task, 2 * 10 * expected_div * 20, "ns")
     assert got == 0xA3, f"after the bad frame, sent 0xA3, received {got:#04x}"
+
+    
+@cocotb.test()
+async def baud_mismatch_test(dut):
+    counts = {"valid": 0, "err": 0} # dictionary to store the number of pulses on rx_valid and frame_err.
+    cocotb.start_soon(count_pulses(dut, counts)) # start a task that counts the number of pulses on rx_valid and frame_err.
+    cocotb.start_soon(Clock(dut.clk, 20, unit="ns").start())  # instantiate a 50 MHz clock on dut.clk
+
+    dut.resetn.value = 0 # flashes the reset signal low for 2 clock cycles to reset the DUT
+    dut.rx.value = 1 # set rx before reset
+    await ClockCycles(dut.clk, 2) #waits for 2 clock cycles to ensure the reset is applied
+    dut.resetn.value = 1
+    await ClockCycles(dut.clk, 2)
+
+
+    
+    for i in range(256):
+        #repeat 256 times, byte i
+        await ClockCycles(dut.clk, random.randint(1, expected_div))   # random idle time, rx stays high - for constrained random verification
+
+        rx_task = cocotb.start_soon(wait_for_byte(dut)) # sets up a listener that waits at rising edge of rx_valid and when pulse comes, reads rx data and finishes.
+        await send_byte(dut, i, 443) # wait for send_byte to send i byte into the rx line
+        got = await with_timeout(rx_task, 2 * 10 * expected_div * 20, "ns") # wait until listener is done, and then see what it returned
+        assert got == i, f"sent {i:#04x}, received {got:#04x}" # check the got value
+
+        rx_task = cocotb.start_soon(wait_for_byte(dut)) # sets up a listener that waits at rising edge of rx_valid and when pulse comes, reads rx data and finishes.
+        await send_byte(dut, i, 425) # wait for send_byte to send i byte into the rx line
+        got = await with_timeout(rx_task, 2 * 10 * expected_div * 20, "ns") # wait until listener is done, and then see what it returned
+        assert got == i, f"sent {i:#04x}, received {got:#04x}" # check the got value
+
+    # after the for loop ends:
+    assert counts["valid"] == 512, f"expected 512 rx_valid pulses, got {counts['valid']}"
+    assert counts["err"] == 0, f"expected no frame errors, got {counts['err']}"
