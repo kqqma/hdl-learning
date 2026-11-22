@@ -11,4 +11,10 @@ ifeq ($(COCOTB_TOPLEVEL),baud_gen)
 COMPILE_ARGS += -Pbaud_gen.oversample=$(OVERSAMPLE)
 endif
 
+BAUD ?= 115200
+export BAUD
+ifeq ($(COCOTB_TOPLEVEL),uart_loopback)
+COMPILE_ARGS += -Puart_loopback.baud=$(BAUD)
+endif
+
 include $(shell cocotb-config --makefiles)/Makefile.sim

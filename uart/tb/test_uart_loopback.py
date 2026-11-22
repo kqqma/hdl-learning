@@ -4,7 +4,7 @@ from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, FallingEdge, ClockCycles, Timer, with_timeout
 import random
 CLK_FREQ = 50_000_000
-BAUD = 115_200
+BAUD = int(os.environ.get("BAUD", "115200"))
 oversample = 1
 expected_div = (CLK_FREQ + (BAUD * oversample) //2) // (BAUD * oversample)
 
