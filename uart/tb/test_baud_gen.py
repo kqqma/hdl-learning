@@ -9,7 +9,7 @@ BAUD = 115_200
 @cocotb.test()
 async def tick_period(dut):
     oversample = int(os.environ.get("OVERSAMPLE", "1"))
-# TODO: same rounding formula as your RTL, in Python (use // for integer division)
+# TODO: same rounding formula as RTL
     expected_div = (CLK_FREQ + (BAUD * oversample) //2) // (BAUD * oversample)
 
     cocotb.start_soon(Clock(dut.clk, 20, unit="ns").start())  # 50 MHz
