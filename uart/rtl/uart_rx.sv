@@ -1,13 +1,13 @@
 module uart_rx #(
     parameter int clk_freq = 50_000_000,
-    parameter int baud     = 115_200
+    parameter int baud = 115_200
 )(
-    input  logic       clk,
-    input  logic       resetn,
-    input  logic       rx,
+    input  logic clk,
+    input  logic resetn,
+    input  logic rx,
     output logic [7:0] rx_data,
-    output logic       rx_valid,
-    output logic       frame_err
+    output logic rx_valid,
+    output logic frame_err
 );
 
 typedef enum logic [1:0] {IDLE, START, DATA, STOP} state_t;
@@ -65,10 +65,10 @@ always_ff @(posedge clk or negedge resetn) begin
         end
         START: begin
         if (tick) begin
-            if (tickcounter == 4'd7) begin      // this is the 8th tick
+            if (tickcounter == 4'd7) begin  // this is the 8th tick
               tickcounter <= '0;
               if (rx_sync)
-                  state <= IDLE;              // glitch
+                  state <= IDLE;    // glitch
                else begin
                   bitcounter <= '0;
                   state <= DATA;

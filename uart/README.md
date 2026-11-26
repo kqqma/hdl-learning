@@ -87,6 +87,8 @@ All tests are self-checking cocotb tests running on Icarus Verilog. RTL is Veril
 | `uart_rx` | `glitch_rejected_rx_low` | 50-cycle low glitch produces no byte and no error, next frame received | ✅ |
 | `uart_rx` | `baud_mismatch_test` | all 256 bytes at +2% and −2% baud, alternating | ✅ 512/512 |
 | `uart_loopback` | `send_and_receive_random_bytes` | `uart_tx` → `uart_rx`, all 256 bytes, random gaps | ✅ 256/256 |
+| `uart_rx` | `receive_back_to_back` | all 256 bytes with zero idle gap between frames | ✅ 256/256 |
+| `uart_loopback` | `send_and_receive_random_bytes` at `BAUD=?????` | same loopback at a second baud rate | ✅ 256/256 |
 
 for the cocotb tests, python acted as the receiver for TX and the sender for RX. this meant each design had been tested against an independent model, before against each other in the loopback tests
 
@@ -127,6 +129,7 @@ make clean && make OVERSAMPLE=16               # baud_gen (OVERSAMPLE = 16)
 make clean && make COCOTB_TOPLEVEL=uart_tx
 make clean && make COCOTB_TOPLEVEL=uart_rx
 make clean && make COCOTB_TOPLEVEL=uart_loopback
+make clean && make COCOTB_TOPLEVEL=uart_loopback BAUD=57600 #or any different baud rate
 ```
 
 ```bash
