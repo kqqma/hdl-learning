@@ -26,4 +26,26 @@ async def test_fifo(dut):
         assert dut.empty.value == exp_empty, f"cycle {cycle}: empty"
         if (exp_rd is not None):
             assert dut.rd_data.value == exp_rd, f"cycle {cycle}: read"
-        
+@cocotb.test()
+async def idle_fifo(dut):
+    # (push, pop, wr_data, exp_full, exp_empty, exp_rd_data or None)
+    table = [(1, 0, 0x1, 0, 0, None), (1, 0, 0x2, 0, 0, None), (0, 0, 0,   0, 0, None), (0, 0, 0,   0, 0, None), (0, 0, 0,   0, 0, None), (0, 0, 0,   0, 0, None), (0, 0, 0,   0, 0, None), (0, 1, 0, 0, 0, 0x1), (0, 1, 0, 0, 1, 0x2)]
+
+    dut.wr_en.value = 0
+    dut.rd_en.value = 0
+    cocotb.start_soon(Clock(dut.clk, 20, unit="ns").start())  # instantiate a 50 MHz clock on dut.clk
+    dut.reset.value = 1 # flashes the reset signal for 2 clock cycles to reset the DUT
+    await ClockCycles(dut.clk, 2) #waits for 2 clock cycles to ensure the reset is applied
+    dut.reset.value = 0
+
+    for cycle, (push, pop, wdata, exp_full, exp_empty, exp_rd) in enumerate(table, start=1):
+        dut.wr_en.value = push
+        dut.rd_en.value = pop
+        dut.wr_data.value = wdata
+        await RisingEdge(dut.clk)
+        await FallingEdge(dut.clk)
+        assert dut.full.value  == exp_full,  f"cycle {cycle}: full"
+        assert dut.empty.value == exp_empty, f"cycle {cycle}: empty"
+        if (exp_rd is not None):
+            assert dut.rd_data.value == exp_rd, f"cycle {cycle}: read"
+    
