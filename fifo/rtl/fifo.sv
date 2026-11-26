@@ -13,7 +13,12 @@ module fifo #(
     output logic empty
 );
 
-localparam int AW = $clog2(DEPTH);
+localparam int AW = (DEPTH > 1) ? $clog2(DEPTH) : 1;
+
+initial begin
+    if (DEPTH < 2 || ((DEPTH & (DEPTH-1)) != 0) )
+        $fatal(1, "sync_fifo: DEPTH must be a power of 2 and >= 2");
+end
 logic [WIDTH-1:0] mem [DEPTH];
 logic [AW:0] wr_ptr;
 logic [AW:0] rd_ptr; 
@@ -38,11 +43,10 @@ always_ff @(posedge clk) begin
         wr_ptr <= wr_ptr + 1;
     mem[wr_ptr[AW-1:0]] <= wr_data;
     end
-    end 
     if (pop) begin
         rd_ptr <= rd_ptr + 1;
     rd_data <= mem[rd_ptr[AW-1:0]];
     end
 end
-
+end
 endmodule

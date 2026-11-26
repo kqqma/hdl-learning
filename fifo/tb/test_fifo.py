@@ -1,11 +1,12 @@
-
+import os
+DEPTH = int(os.environ.get("DEPTH", 4))   # default matches the RTL default
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, FallingEdge, ClockCycles
 
 
 
-@cocotb.test()
+@cocotb.test(skip=(DEPTH != 4))
 async def test_fifo(dut):
     table = [(1, 0, 0xA, 0, 0, None), (1, 0, 0xB, 0, 0, None), (1, 0, 0xC, 0, 0, None), (1, 0, 0xD, 1, 0, None), (1, 0, 0xE, 1, 0, None), (1, 1, 0xF, 1, 0, 0xA), (0, 1, 0, 0, 0, 0xB), (0, 1, 0, 0, 0, 0xC), (0, 1, 0, 0, 0, 0xD), (0, 1, 0, 0, 1, 0xF)]
 
@@ -26,7 +27,7 @@ async def test_fifo(dut):
         assert dut.empty.value == exp_empty, f"cycle {cycle}: empty"
         if (exp_rd is not None):
             assert dut.rd_data.value == exp_rd, f"cycle {cycle}: read"
-@cocotb.test()
+@cocotb.test(skip=(DEPTH != 4))
 async def idle_fifo(dut):
     # (push, pop, wr_data, exp_full, exp_empty, exp_rd_data or None)
     table = [(1, 0, 0x1, 0, 0, None), (1, 0, 0x2, 0, 0, None), (0, 0, 0,   0, 0, None), (0, 0, 0,   0, 0, None), (0, 0, 0,   0, 0, None), (0, 0, 0,   0, 0, None), (0, 0, 0,   0, 0, None), (0, 1, 0, 0, 0, 0x1), (0, 1, 0, 0, 1, 0x2)]
